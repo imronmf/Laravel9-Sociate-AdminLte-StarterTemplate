@@ -1,66 +1,176 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+=====SOCIATE=====
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+INSTALL JETSTREAM LIVEWIRE
+composer require laravel/jetstream
+php artisan jetstream:install livewire
+npm install
+npm ci && npm run dev
+php artisan migrate
 
-## About Laravel
+INSTALL LARAVEL SOCIALITE
+composer require laravel/socialite
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+config/app.php
+Laravel\Socialite\SocialiteServiceProvider::class,
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Di aliases
+'Socialite' => Laravel\Socialite\Facades\Socialite::class,
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Config/services.php
+'google' => [
+        'client_id' => '………',
+        'client_secret' => '………',
+        'redirect' => '………',
+    ],
 
-## Learning Laravel
+CREATE GOOGLE APP
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+https://console.developers.google.com/apis/credentials?pli
+-	Klik menu credentials
+-	Pilih create credentials  OAuth client ID
+-	Isi form, pastikan URL yang di inputkan sesuai
+-	Simpan
+-	Copy Client ID dan Client Secret ke services.php
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+SETTING AKHIR
+-	Tambah kolom google_id tabel users
+-	Edit model User
+protected $fillable = [
+        'name', 'email', 'password', 'google_id',
+    ];
+-	Buat controller : LoginWithGoogleController
 
-## Laravel Sponsors
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
 
-### Premium Partners
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+<?php
+namespace App\Http\Controllers;
 
-## Contributing
+use Illuminate\Http\Request;
+use Laravel\Socialite\Facades\Socialite;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Exception;
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+class LoginWithGoogleController extends Controller
+{
+     public function redirectToGoogle()
+    {
+        return Socialite::driver('google')->redirect();
+    }
 
-## Code of Conduct
+    public function handleGoogleCallback()
+    {
+        try {
+      
+            $user = Socialite::driver('google')->user();
+       
+            $finduser = User::where('google_id', $user->id)->first();
+       
+            if($finduser){
+       
+                Auth::login($finduser);
+      
+                return redirect()->intended('dashboard');
+       
+            }else{
+                $newUser = User::create([
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'google_id'=> $user->id,
+                    'password' => encrypt('123456dummy')
+                ]);
+      
+                Auth::login($newUser);
+                return redirect()->intended('dashboard');
+            }
+      
+        } catch (Exception $e) {
+            dd($e->getMessage());
+        }
+    }
+}
+-	Tambahkan route:
+use App\Http\Controllers\LoginWithGoogleController;
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Route::get('auth/google', [LoginWithGoogleController::class, 'redirectToGoogle']);
+Route::get('auth/google/callback', [LoginWithGoogleController::class, 'handleGoogleCallback']);
 
-## Security Vulnerabilities
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+-Tambah BUTTON Login
 
-## License
+=====adminLTE=====
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+composer require jeroennoten/laravel-adminlte
+php artisan adminlte:install
+npm remove bootstrap
+npm i bootstrap@4.6.1 -P
+npm remove @popperjs/core
+
+-Package lain
+npm i @fortawesome/fontawesome-free
+npm i icheck-bootstrap
+npm i overlayscrollbars
+npm i cross-env@7.0.3 -D
+npm i jquery@3.6.0 -P
+npm i popper.js@1.16.1 -P
+npm i autoprefixer@10.4.5 -P
+npm i resolve-url-loader@5.0.0 -D
+npm i sass-loader@12.1.0 -D
+npm i @lgaitan/pace-progress@1.0.7 -P
+npm i @sweetalert2/theme-bootstrap-4@5.0.11 -P
+npm i @ttskch/select2-bootstrap4-theme@1.5.2 -P
+npm i bootstrap4-toggle@3.6.1 -P
+npm i datatables.net-bs4@1.12.1 -P 
+npm i datatables.net-buttons-bs4@2.2.3 -P
+npm i frappe-charts@1.6.2 -P
+npm i select2@4.0.13 -P
+npm i sweetalert2@11.4.24 toastr@2.1.4 -P
+
+
+ganti
+"scripts": {
+    "dev": "vite",
+    "build": "vite build"
+},
+
+jadi
+"scripts": {
+    "dev": "npm run development",
+    "development": "cross-env NODE_ENV=development node_modules/webpack/bin/webpack.js --progress --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "watch": "npm run development -- --watch",
+    "watch-poll": "npm run watch -- --watch-poll",
+    "hot": "cross-env NODE_ENV=development node_modules/webpack-dev-server/bin/webpack-dev-server.js --inline --hot --disable-host-check --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "prod": "npm run production",
+    "production": "cross-env NODE_ENV=production node_modules/webpack/bin/webpack.js --no-progress --config=node_modules/laravel-mix/setup/webpack.config.js"
+},
+
+
+
+
+resource/views/dashboard.blade.php
+
+@extends('adminlte::page')
+
+@section('title', 'Dashboard')
+
+@section('content_header')
+    <h1>Dashboard</h1>
+@stop
+
+@section('content')
+    <p>Welcome to this beautiful admin panel.</p>
+@stop
+
+@section('css')
+    <link rel="stylesheet" href="/css/admin_custom.css">
+@stop
+
+@section('js')
+    <script> console.log('Hi!'); </script>
+@stop
+
+
+
+
